@@ -1,5 +1,7 @@
 # Banana
 
+ALL THIS IS OUTDATED IN THE NEWEST RELEASE, PLEASE IGNORE
+
 you need at least some prior knowledge in python to use this.
 You will need to install the modules: socket, time, threading, pyttsx3, pigpio, os, pygame, random
 some come with the python 3 installation, others like pigpio do not
