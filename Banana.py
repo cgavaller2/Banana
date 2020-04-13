@@ -1,7 +1,8 @@
-import socket, time, threading, pyttsx3, pigpio, os, pygame, random
+import socket, time, threading, pyttsx3, pigpio, os, pygame, random, lcddriver, datetime
 from Settings import *
 from Data import *
 from PhoneticAPI import *
+from datetime import datetime
 os.system("sudo pigpiod")
 time.sleep(.5)
 HOST = "irc.chat.twitch.tv"
@@ -10,9 +11,11 @@ recentmsg = ""
 mouthStatus = 0
 pi = pigpio.pi()
 engine = pyttsx3.init()
+display = lcddriver.lcd()
+now = datetime.now()
 pygame.mixer.init()
 engine.setProperty('rate', 140)
-engine.setProperty('volume', 1)
+engine.setProperty('volume', 2)
 engine.setProperty('voice', 'english+m3')
 pi.set_servo_pulsewidth(27, 850)
 
@@ -21,9 +24,9 @@ def music():
     while True:
         pygame.mixer.music.load(str(song)+'.wav')
         pygame.mixer.music.play()
-        time.sleep(120)
+        time.sleep(180)
         pygame.mixer.music.fadeout(4000)
-        time.sleep(30)
+        time.sleep(15)
         if song == 2:
             song = 0
         song = song+1
@@ -35,17 +38,17 @@ def dance():
         if mouthStatus == 1:
             pi.set_servo_pulsewidth(27, 850)
         else:
-            pi.set_servo_pulsewidth(27, 750)
+            pi.set_servo_pulsewidth(27, 700)
             time.sleep(1.25)
             if mouthStatus == 1:
                 pi.set_servo_pulsewidth(27, 850)
             else:
-                pi.set_servo_pulsewidth(27, 1050)
+                pi.set_servo_pulsewidth(27, 1000)
 
 def ping():
     print("Pinging Started.")
     while True:
-        time.sleep(100)
+        time.sleep(60)
         s.send(bytes("PONG :tmi.twitch.tv\r\n", "UTF-8"))
         print("PING Sent.")
 
@@ -55,18 +58,20 @@ def send_message(msg):
 def mouth(mouthOpen):
     if mouthOpen == 1:
         mouthStatus = 1
-        pi.set_servo_pulsewidth(17, 1250)
+        pi.set_servo_pulsewidth(22, 1250)
         return
     else:
         if mouthOpen == 0:
             mouthStatus = 0
-            pi.set_servo_pulsewidth(17, 2000)
+            pi.set_servo_pulsewidth(22, 2000)
             return
 
 def warn():
     print(username + ', Has been warned for saying a blacklisted word!')
     warned.append(username)
-    send_message(username + ", Don't say that again or you will be banned!")
+    send_message(username + ", Don't say that again or you will be perm-banned!")
+    for x in range(0, 10):
+        send_message("/tempban " + username + " 240")
     return
 
 def ban():
@@ -78,7 +83,7 @@ def ban():
 
 def say(talk):
     print(username + " said: " + message)
-    api_reply = api_request(APIKEY, talk, ['nigger','nigga','faggot','fag','cock','nicker','nigur','monkey','black','gurney'])
+    api_reply = api_request(APIKEY, talk, ['nigger','nigga','faggot','fag','nicker','nigur','monkey','gurney'])
     if debug == True:
         print(api_reply)
     code = api_reply['code']
@@ -92,7 +97,7 @@ def say(talk):
         engine.runAndWait()
         mouth(0)
         pygame.mixer.music.unpause()
-        time.sleep(5)
+        time.sleep(3)
     else:
         print('Bad word detected!')
         if username in warned and ban_on_badword == True:
@@ -133,6 +138,10 @@ while True:
         else:
             recentmsg = message
             mouthStatus = 1
+            time.sleep(.2)
+            display.lcd_display_string(username, 1)
             say(message)
             mouthStatus = 0
+            display.lcd_clear()
+            
             break
